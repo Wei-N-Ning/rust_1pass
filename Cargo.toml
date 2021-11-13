@@ -5,8 +5,12 @@ edition = "2021"
 authors = ["Wei Ning <macgnw@gmail.com>"]
 
 [dependencies]
-async-std = "1"
+tokio = { version = "1", features = [ "full" ] }
+reqwest = { version = "^0.11", features = [] }
 clap = "3.0.0-beta.5"
+regex = "^1.5"
+lazy_static = "1"
+semver = "1"
 
 [[bin]]
 name = "openv"
