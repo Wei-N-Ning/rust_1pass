@@ -1,0 +1,27 @@
+[package]
+name = "rust_1pass"
+version = "0.0.1"
+edition = "2021"
+authors = ["Wei Ning <macgnw@gmail.com>"]
+
+[dependencies]
+async-std = "1"
+clap = "3.0.0-beta.5"
+
+[[bin]]
+name = "openv"
+path = "src/bin/openv.rs"
+
+[lib]
+name = "lib_rust_1pass"
+path = "src/lib/lib.rs"
+test = true
+doctest = false
+bench = false
+doc = true
+plugin = false
+proc-macro = false
+harness = true
+edition = "2021"
+crate-type = ["rlib"]
+required-features = []
