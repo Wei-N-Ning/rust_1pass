@@ -1,89 +1,18 @@
+// to download and parse the 1password CLI release note;
+// to extract the latest release version and compose a btree-map of:
+// { os: { arch: download_url } }
+// e.g.
+// { apple: { universal: https://..../op_apple_universal_v1.12.3.zip }
+//   linux: { 386: ..., AMD64: ... }
+//   ...
+// }
+
+use crate::openv::types::*;
 use regex::Regex;
 use semver::Version;
 use std::array::IntoIter;
 use std::collections::BTreeMap;
-use std::fmt::Debug;
 use std::str::FromStr;
-use thiserror::Error;
-
-#[derive(Debug, PartialEq, Error)]
-enum HtmlParsingError {
-    #[error("Missing html <body>...</body> tag.")]
-    MissingBodyTag,
-
-    #[error("Missing html <article>...</article> tag.")]
-    MissingArticleTag,
-
-    #[error("Missing the version string, e.g. title=\"1.12.3 - build #1120301\".")]
-    MissingVersionString,
-
-    #[error("Version string is not a semantic version (can not parse). A legit semver should look like 1.12.3.")]
-    VersionStringIsNotSemver,
-
-    #[error("Missing download urls to the binaries.")]
-    MissingDownloadUrls,
-
-    #[error("Download url does not contain target tokens. Expect: *_<OS>_<Arch>_*. Got: {0:?}.")]
-    InvalidTargetUrl(String),
-}
-
-#[derive(Debug, PartialEq)]
-struct Release {
-    version: Version,
-    targets: Targets,
-}
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-enum OperatingSystem {
-    Apple,
-    Linux,
-    OpenBSD,
-    FreeBSD,
-    Windows,
-}
-
-impl FromStr for OperatingSystem {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use OperatingSystem::*;
-        match s {
-            "apple" => Ok(Apple),
-            "linux" => Ok(Linux),
-            "openbsd" => Ok(OpenBSD),
-            "freebsd" => Ok(FreeBSD),
-            "windows" => Ok(Windows),
-            _ => Err(()),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-enum Arch {
-    X86_32,
-    AMD64,
-    Arm64,
-    Arm,
-    AppleUniversal,
-}
-
-impl FromStr for Arch {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use Arch::*;
-        match s {
-            "386" => Ok(X86_32),
-            "arm64" => Ok(Arm64),
-            "amd64" => Ok(AMD64),
-            "arm" => Ok(Arm),
-            "universal" => Ok(AppleUniversal),
-            _ => Err(()),
-        }
-    }
-}
-
-type Targets = BTreeMap<OperatingSystem, BTreeMap<Arch, String>>;
 
 fn extract_latest_release(text: &str) -> anyhow::Result<&str> {
     use HtmlParsingError::*;
