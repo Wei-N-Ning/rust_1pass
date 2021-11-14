@@ -5,7 +5,6 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::str::FromStr;
 use thiserror::Error;
-use tokio::runtime;
 
 #[derive(Debug, PartialEq, Error)]
 enum HtmlParsingError {
@@ -148,7 +147,7 @@ fn parse_download_urls(urls: Vec<&str>) -> anyhow::Result<Targets> {
     Ok(targets)
 }
 
-fn extract_targets(body: &str) -> anyhow::Result<Release> {
+fn parse_release_notes(body: &str) -> anyhow::Result<Release> {
     let latest_release_info = extract_latest_release(body)?;
     let version = extract_version(latest_release_info)?;
     let download_urls = extract_download_urls(latest_release_info)?;
@@ -158,16 +157,21 @@ fn extract_targets(body: &str) -> anyhow::Result<Release> {
 
 const URL: &str = "https://app-updates.agilebits.com/product_history/CLI";
 
-async fn download_release_notes() -> anyhow::Result<Release> {
+async fn download_release_notes() -> anyhow::Result<String> {
     let resp = reqwest::get(URL).await?;
-    let body = resp.text().await?;
-    extract_targets(&body)
+    resp.text().await.map_err(|err| anyhow::Error::new(err))
 }
 
-#[test]
-fn test_get_some() {
-    let fut = download_release_notes();
-    let rt = runtime::Runtime::new().unwrap();
-    let o = rt.block_on(fut);
-    assert!(o.is_ok());
+#[cfg(test)]
+mod test {
+    use super::*;
+    use tokio::runtime;
+
+    #[test]
+    fn test_parse_release_notes_expect_successful() {
+        let fut = download_release_notes();
+        let rt = runtime::Runtime::new().unwrap();
+        let o = rt.block_on(fut);
+        assert!(o.is_ok());
+    }
 }
