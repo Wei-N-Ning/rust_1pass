@@ -26,9 +26,12 @@ fn unpack_one_to(zfilename: &Path, opt: UnpackOption, o_dir: &Path) -> anyhow::R
     };
     let mut contents = Vec::<u8>::with_capacity(1024);
     BufReader::new(file).read(&mut contents)?;
-
     let o_file = fs::File::create(&o_filename)?;
     BufWriter::new(o_file).write_all(&contents)?;
+
+    // TODO: set file mod (u+x)
+    // the caller then can remove the zip file
+
     return Ok(o_filename.to_string_lossy().into_owned());
 }
 
