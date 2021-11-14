@@ -1,5 +1,6 @@
 use semver::Version;
 use std::collections::BTreeMap;
+use std::env;
 use std::fmt::Debug;
 use std::str::FromStr;
 use thiserror::Error;
@@ -40,6 +41,12 @@ pub enum OperatingSystem {
     Windows,
 }
 
+impl OperatingSystem {
+    fn current() -> Self {
+        Self::from_str(env::consts::OS).unwrap()
+    }
+}
+
 impl FromStr for OperatingSystem {
     type Err = ();
 
@@ -65,6 +72,25 @@ pub enum Arch {
     AppleUniversal,
 }
 
+impl Arch {
+    #[allow(unreachable_code)]
+    fn current() -> Option<Self> {
+        #[cfg(target_arch = "x86_64")]
+        {
+            return Some(Arch::AMD64);
+        }
+        #[cfg(target_arch = "x86")]
+        {
+            return Some(Arch::X86_32);
+        }
+        #[cfg(target_arch = "arm")]
+        {
+            return Some(Arch::Arm);
+        }
+        return None;
+    }
+}
+
 impl FromStr for Arch {
     type Err = ();
 
@@ -82,3 +108,19 @@ impl FromStr for Arch {
 }
 
 pub type Targets = BTreeMap<OperatingSystem, BTreeMap<Arch, String>>;
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_ensure_current_operating_system_recognizable() {
+        let os = OperatingSystem::current();
+        assert!(format!("{:?}", os).len() > 0);
+    }
+
+    #[test]
+    fn test_ensure_current_arch_recognizable() {
+        let _ = Arch::current();
+    }
+}
