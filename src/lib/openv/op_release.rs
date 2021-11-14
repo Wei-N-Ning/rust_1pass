@@ -53,10 +53,8 @@ fn parse_release_notes(body: &str) -> anyhow::Result<Release> {
     parse_download_urls(download_urls)
 }
 
-#[allow(dead_code)]
 const URL: &str = "https://app-updates.agilebits.com/product_history/CLI";
 
-#[allow(dead_code)]
 async fn download_release_notes() -> anyhow::Result<String> {
     let resp = reqwest::get(URL).await?;
     resp.text().await.map_err(|err| anyhow::Error::new(err))

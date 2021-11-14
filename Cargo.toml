@@ -13,6 +13,7 @@ lazy_static = "1"
 semver = "1"
 anyhow = "1"
 thiserror = "1"
+zip = "^0.5"
 
 [[bin]]
 name = "openv"
