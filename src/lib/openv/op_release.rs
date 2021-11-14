@@ -155,8 +155,10 @@ fn parse_release_notes(body: &str) -> anyhow::Result<Release> {
     Ok(Release { version, targets })
 }
 
+#[allow(dead_code)]
 const URL: &str = "https://app-updates.agilebits.com/product_history/CLI";
 
+#[allow(dead_code)]
 async fn download_release_notes() -> anyhow::Result<String> {
     let resp = reqwest::get(URL).await?;
     resp.text().await.map_err(|err| anyhow::Error::new(err))
@@ -165,13 +167,133 @@ async fn download_release_notes() -> anyhow::Result<String> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use tokio::runtime;
+    use std::fs::read_to_string;
+    use std::path::Path;
 
     #[test]
     fn test_parse_release_notes_expect_successful() {
-        let fut = download_release_notes();
-        let rt = runtime::Runtime::new().unwrap();
-        let o = rt.block_on(fut);
-        assert!(o.is_ok());
+        let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("testdata")
+            .join("release_notes")
+            .join("2021_11_14_release_notes.html");
+        let release_notes = read_to_string(filename).unwrap();
+        let rl = parse_release_notes(&release_notes).unwrap();
+        assert_eq!(semver::Version::new(1, 12, 3), rl.version);
+        assert_eq!(5, rl.targets.len());
+    }
+
+    #[test]
+    fn test_extract_latest_release_missing_body_tag() {
+        let release_notes = r##"something fake"##;
+        let result = extract_latest_release(release_notes);
+        assert!(result.is_err());
+        assert_eq!(
+            &HtmlParsingError::MissingBodyTag,
+            result
+                .unwrap_err()
+                .downcast_ref::<HtmlParsingError>()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_extract_latest_release_missing_article_tag() {
+        let release_notes = r##"<body>
+        </body>"##;
+        let result = extract_latest_release(release_notes);
+        assert!(result.is_err());
+        assert_eq!(
+            &HtmlParsingError::MissingArticleTag,
+            result
+                .unwrap_err()
+                .downcast_ref::<HtmlParsingError>()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_extract_version_expect_error() {
+        let release_notes = r##"something fake"##;
+        let result = extract_version(release_notes);
+        assert!(result.is_err());
+        assert_eq!(
+            &HtmlParsingError::MissingVersionString,
+            result
+                .unwrap_err()
+                .downcast_ref::<HtmlParsingError>()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_extract_download_urls_expect_missing_urls_error() {
+        let release_notes = r##"something fake"##;
+        let result = extract_download_urls(release_notes);
+        assert!(result.is_err());
+        assert_eq!(
+            &HtmlParsingError::MissingDownloadUrls,
+            result
+                .unwrap_err()
+                .downcast_ref::<HtmlParsingError>()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_download_urls_no_base() {
+        let urls = vec!["http"];
+        let result = parse_download_urls(urls);
+        assert!(result.is_err());
+        assert_eq!(
+            &HtmlParsingError::InvalidTargetUrl("no base".to_string()),
+            result
+                .unwrap_err()
+                .downcast_ref::<HtmlParsingError>()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_download_urls_missing_os_arch() {
+        let urls = vec!["https://some/v123.zip"];
+        let result = parse_download_urls(urls);
+        assert!(result.is_err());
+        assert_eq!(
+            &HtmlParsingError::InvalidTargetUrl("base has no os or arch: v123.zip".to_string()),
+            result
+                .unwrap_err()
+                .downcast_ref::<HtmlParsingError>()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_download_urls_invalid_os() {
+        let urls = vec!["https://some/op_snes_16bit_v122.zip"];
+        let result = parse_download_urls(urls);
+        assert!(result.is_err());
+        assert_eq!(
+            &HtmlParsingError::InvalidTargetUrl("invalid os: op_snes_16bit_v122.zip".to_string()),
+            result
+                .unwrap_err()
+                .downcast_ref::<HtmlParsingError>()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_parse_download_urls_invalid_arch() {
+        let urls = vec!["https://some/op_linux_16bit_v122.zip"];
+        let result = parse_download_urls(urls);
+        assert!(result.is_err());
+        assert_eq!(
+            &HtmlParsingError::InvalidTargetUrl(
+                "invalid arch: op_linux_16bit_v122.zip".to_string()
+            ),
+            result
+                .unwrap_err()
+                .downcast_ref::<HtmlParsingError>()
+                .unwrap()
+        );
     }
 }
