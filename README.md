@@ -1,10 +1,21 @@
 # rust_1pass
 
-1Password CLI wrapper.
+1Password CLI wrapper and installer.
 
 This project is work-in-progress.
 
-Goals:
+## Objective
+
+rust_1pass aims to provide a library for Rust applications that want to integrate
+1Password to their business logic.
+
+### Why not using the 1Password Rest API
+
+The API token is essentially a single factor authentication. It is less secure than the
+CLI's 2-factor authentication (provided that 2-factor is turned on in the Account Setting)
+.
+
+## Goals
 
 - work cross-platforms
 - automatically get the latest release from 1Password release page

@@ -78,10 +78,10 @@ fn parse_download_urls(urls: Vec<&str>) -> anyhow::Result<Targets> {
 
 fn parse_release_notes(body: &str) -> anyhow::Result<Release> {
     let latest_release_info = extract_latest_release(body)?;
-    let version = extract_version(latest_release_info)?;
+    let _version = extract_version(latest_release_info)?;
     let download_urls = extract_download_urls(latest_release_info)?;
-    let targets = parse_download_urls(download_urls)?;
-    Ok(Release { version, targets })
+    let _targets = parse_download_urls(download_urls)?;
+    todo!()
 }
 
 #[allow(dead_code)]
@@ -108,7 +108,7 @@ mod test {
         let release_notes = read_to_string(filename).unwrap();
         let rl = parse_release_notes(&release_notes).unwrap();
         assert_eq!(semver::Version::new(1, 12, 3), rl.version);
-        assert_eq!(5, rl.targets.len());
+        // assert_eq!(5, rl.targets.len());
     }
 
     #[test]
