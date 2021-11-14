@@ -63,9 +63,10 @@ impl FromStr for LocalVersion {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (_, basename) = s
-            .rsplit_once(|ch| ch == '/' || ch == '\\')
-            .ok_or(anyhow!("not a file path: {}", s))?;
+        let basename = match s.rsplit_once(|ch| ch == '/' || ch == '\\') {
+            Some((_, x)) => x,
+            None => s,
+        };
         let rl = Release::from_str(basename)?;
         Ok(LocalVersion {
             version: rl.version,
