@@ -9,9 +9,6 @@
 
 use crate::openv::types::*;
 use regex::Regex;
-use semver::Version;
-use std::array::IntoIter;
-use std::collections::BTreeMap;
 use std::str::FromStr;
 
 fn extract_latest_release(text: &str) -> anyhow::Result<&str> {
@@ -21,17 +18,6 @@ fn extract_latest_release(text: &str) -> anyhow::Result<&str> {
         .split_once("</article>")
         .ok_or(MissingArticleTag)?;
     Ok(latest_release_info)
-}
-
-fn extract_version(text: &str) -> anyhow::Result<Version> {
-    use HtmlParsingError::*;
-    let version_re = Regex::new(r"(\d+\.\d+\.\d+) - build #\d+").unwrap();
-    let ver_str = version_re
-        .captures(text)
-        .map(|cap| cap.get(1).map(|mat| mat.as_str()))
-        .flatten()
-        .ok_or(MissingVersionString)?;
-    Version::parse(ver_str).map_err(|_| anyhow::Error::new(VersionStringIsNotSemver))
 }
 
 fn extract_download_urls(text: &str) -> anyhow::Result<Vec<&str>> {
@@ -48,40 +34,23 @@ fn extract_download_urls(text: &str) -> anyhow::Result<Vec<&str>> {
     }
 }
 
-fn parse_download_urls(urls: Vec<&str>) -> anyhow::Result<Targets> {
+fn parse_download_urls(urls: Vec<&str>) -> anyhow::Result<Release> {
     use HtmlParsingError::*;
-    let mut targets = Targets::new();
-    let re = Regex::new(r####"op_([0-9a-zA-Z]+)_([0-9a-zA-Z]+)_v"####).unwrap();
+    let cp = Platform::current();
     for url in urls {
-        let (_, base) = url
-            .rsplit_once("/")
-            .ok_or(InvalidTargetUrl("no base".to_string()))?;
-        let cap = re.captures(base).ok_or(InvalidTargetUrl(format!(
-            "base has no os or arch: {}",
-            base
-        )))?;
-        let os = OperatingSystem::from_str(cap.get(1).unwrap().as_str())
-            .map_err(|_| InvalidTargetUrl(format!("invalid os: {}", base)))?;
-        let arch = Arch::from_str(cap.get(2).unwrap().as_str())
-            .map_err(|_| InvalidTargetUrl(format!("invalid arch: {}", base)))?;
-        targets
-            .entry(os)
-            .and_modify(|ent| {
-                ent.insert(arch, url.to_string());
-            })
-            .or_insert_with(|| {
-                BTreeMap::<Arch, String>::from_iter(IntoIter::new([(arch, url.to_string())]))
-            });
+        if let Ok(rl) = Release::from_str(url) {
+            if rl.platform == cp {
+                return Ok(rl);
+            }
+        }
     }
-    Ok(targets)
+    Err(anyhow::Error::new(MissingPlatform(cp)))
 }
 
 fn parse_release_notes(body: &str) -> anyhow::Result<Release> {
     let latest_release_info = extract_latest_release(body)?;
-    let _version = extract_version(latest_release_info)?;
     let download_urls = extract_download_urls(latest_release_info)?;
-    let _targets = parse_download_urls(download_urls)?;
-    todo!()
+    parse_download_urls(download_urls)
 }
 
 #[allow(dead_code)]
@@ -108,7 +77,6 @@ mod test {
         let release_notes = read_to_string(filename).unwrap();
         let rl = parse_release_notes(&release_notes).unwrap();
         assert_eq!(semver::Version::new(1, 12, 3), rl.version);
-        // assert_eq!(5, rl.targets.len());
     }
 
     #[test]
@@ -141,20 +109,6 @@ mod test {
     }
 
     #[test]
-    fn test_extract_version_expect_error() {
-        let release_notes = r##"something fake"##;
-        let result = extract_version(release_notes);
-        assert!(result.is_err());
-        assert_eq!(
-            &HtmlParsingError::MissingVersionString,
-            result
-                .unwrap_err()
-                .downcast_ref::<HtmlParsingError>()
-                .unwrap()
-        );
-    }
-
-    #[test]
     fn test_extract_download_urls_expect_missing_urls_error() {
         let release_notes = r##"something fake"##;
         let result = extract_download_urls(release_notes);
@@ -174,7 +128,10 @@ mod test {
         let result = parse_download_urls(urls);
         assert!(result.is_err());
         assert_eq!(
-            &HtmlParsingError::InvalidTargetUrl("no base".to_string()),
+            &HtmlParsingError::MissingPlatform(Platform {
+                os: OperatingSystem::Linux,
+                arch: Arch::AMD64
+            }),
             result
                 .unwrap_err()
                 .downcast_ref::<HtmlParsingError>()
@@ -188,7 +145,10 @@ mod test {
         let result = parse_download_urls(urls);
         assert!(result.is_err());
         assert_eq!(
-            &HtmlParsingError::InvalidTargetUrl("base has no os or arch: v123.zip".to_string()),
+            &HtmlParsingError::MissingPlatform(Platform {
+                os: OperatingSystem::Linux,
+                arch: Arch::AMD64
+            }),
             result
                 .unwrap_err()
                 .downcast_ref::<HtmlParsingError>()
@@ -202,7 +162,10 @@ mod test {
         let result = parse_download_urls(urls);
         assert!(result.is_err());
         assert_eq!(
-            &HtmlParsingError::InvalidTargetUrl("invalid os: op_snes_16bit_v122.zip".to_string()),
+            &HtmlParsingError::MissingPlatform(Platform {
+                os: OperatingSystem::Linux,
+                arch: Arch::AMD64
+            }),
             result
                 .unwrap_err()
                 .downcast_ref::<HtmlParsingError>()
@@ -216,9 +179,10 @@ mod test {
         let result = parse_download_urls(urls);
         assert!(result.is_err());
         assert_eq!(
-            &HtmlParsingError::InvalidTargetUrl(
-                "invalid arch: op_linux_16bit_v122.zip".to_string()
-            ),
+            &HtmlParsingError::MissingPlatform(Platform {
+                os: OperatingSystem::Linux,
+                arch: Arch::AMD64
+            }),
             result
                 .unwrap_err()
                 .downcast_ref::<HtmlParsingError>()

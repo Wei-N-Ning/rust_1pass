@@ -1,6 +1,5 @@
 use anyhow::anyhow;
 use regex::Regex;
-use std::collections::BTreeMap;
 use std::env;
 use std::fmt::Debug;
 use std::str::FromStr;
@@ -8,7 +7,6 @@ use std::str::FromStr;
 use semver::Version;
 use thiserror::Error;
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq, Error)]
 pub enum HtmlParsingError {
     #[error("Missing html <body>...</body> tag.")]
@@ -17,17 +15,8 @@ pub enum HtmlParsingError {
     #[error("Missing html <article>...</article> tag.")]
     MissingArticleTag,
 
-    #[error("Missing the version string, e.g. title=\"1.12.3 - build #1120301\".")]
-    MissingVersionString,
-
-    #[error("Version string is not a semantic version (can not parse). A legit semver should look like 1.12.3.")]
-    VersionStringIsNotSemver,
-
     #[error("Missing download urls to the binaries.")]
     MissingDownloadUrls,
-
-    #[error("Download url does not contain target tokens. Expect: *_<OS>_<Arch>_*. Got: {0:?}.")]
-    InvalidTargetUrl(String),
 
     #[error("Missing platform. Expect: {0:?}")]
     MissingPlatform(Platform),
@@ -168,7 +157,7 @@ pub struct Platform {
 }
 
 impl Platform {
-    fn current() -> Self {
+    pub(crate) fn current() -> Self {
         Self {
             os: OperatingSystem::current(),
             arch: Arch::current(),
@@ -200,8 +189,6 @@ impl FromStr for Platform {
         Ok(Self { os, arch })
     }
 }
-
-pub type Targets = BTreeMap<OperatingSystem, BTreeMap<Arch, String>>;
 
 #[cfg(test)]
 mod test {
