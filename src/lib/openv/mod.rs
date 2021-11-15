@@ -10,6 +10,9 @@ mod op_release;
 #[allow(dead_code)]
 mod types;
 
+mod installer;
 #[allow(dead_code)]
 mod unpacker;
-mod installer;
+
+pub use installer::get_or_install;
+pub use types::Installation;
