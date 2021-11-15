@@ -9,6 +9,8 @@ use tokio::fs;
 
 #[allow(dead_code)]
 pub async fn get_or_install(dirname: &Path) -> anyhow::Result<Installation> {
+    // in the future, it will compare the local version against the release version and install
+    // the latest version.
     if let Ok(lv) = find_local_version(dirname).await {
         return Ok(Installation {
             local_version: lv,
