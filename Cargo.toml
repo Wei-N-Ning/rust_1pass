@@ -14,6 +14,8 @@ semver = "1"
 anyhow = "1"
 thiserror = "1"
 zip = "^0.5"
+rpassword = "5"
+dirs = "4.0.0"
 
 [[bin]]
 name = "openv"
