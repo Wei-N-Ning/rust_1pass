@@ -1,19 +1,24 @@
-use anyhow::anyhow;
-use std::fs;
-use std::io::{BufReader, BufWriter, Read, Write};
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
+use std::{fs, io};
 
-enum UnpackOption {
+use anyhow::anyhow;
+
+pub enum UnpackOption {
     /// name the unpacked file after the zip archive entry
     UseEntryName(String),
     /// name the unpacked file after the zip archive (without the extension)
     UseArchiveName(String),
 }
 
-fn unpack_one_to(zfilename: &Path, opt: UnpackOption, o_dir: &Path) -> anyhow::Result<String> {
+pub fn unpack_one_to(
+    zfilename: &Path,
+    opt: UnpackOption,
+    o_dir: &Path,
+) -> anyhow::Result<(u64, String)> {
     let zipfile = std::fs::File::open(&zfilename).unwrap();
     let mut archive = zip::ZipArchive::new(zipfile)?;
-    let (o_filename, file) = match opt {
+    let (o_filename, mut file) = match opt {
         UnpackOption::UseEntryName(name) => (o_dir.join(&name), archive.by_name(&name)?),
         UnpackOption::UseArchiveName(name) => {
             let basename = zfilename
@@ -24,15 +29,12 @@ fn unpack_one_to(zfilename: &Path, opt: UnpackOption, o_dir: &Path) -> anyhow::R
             (o_dir.join(basename), archive.by_name(&name)?)
         }
     };
-    let mut contents = Vec::<u8>::with_capacity(1024);
-    BufReader::new(file).read(&mut contents)?;
-    let o_file = fs::File::create(&o_filename)?;
-    BufWriter::new(o_file).write_all(&contents)?;
-
-    // TODO: set file mod (u+x)
-    // the caller then can remove the zip file
-
-    return Ok(o_filename.to_string_lossy().into_owned());
+    let mut o_file = fs::File::create(&o_filename)?;
+    let copied = io::copy(&mut file, &mut o_file)?;
+    let mut perms = fs::metadata(&o_filename)?.permissions();
+    perms.set_mode(0o700);
+    fs::set_permissions(&o_filename, perms)?;
+    return Ok((copied, o_filename.to_string_lossy().into_owned()));
 }
 
 #[cfg(test)]
@@ -54,7 +56,7 @@ mod test {
             &tmp,
         );
         assert!(res.is_ok());
-        assert!(res.unwrap().ends_with("op"));
+        assert!(res.unwrap().1.ends_with("op"));
     }
 
     #[test]
@@ -72,6 +74,6 @@ mod test {
             &tmp,
         );
         assert!(res.is_ok());
-        assert!(res.unwrap().ends_with("op_linux_amd64_v1.11.2"));
+        assert!(res.unwrap().1.ends_with("op_linux_amd64_v1.11.2"));
     }
 }

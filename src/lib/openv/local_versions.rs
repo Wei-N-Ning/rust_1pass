@@ -12,7 +12,7 @@ enum LocalVersionError {
     NoLocalVersion,
 }
 
-async fn find_local_version(dirname: &Path) -> anyhow::Result<LocalVersion> {
+pub async fn find_local_version(dirname: &Path) -> anyhow::Result<LocalVersion> {
     use LocalVersionError::*;
     let mut dir = fs::read_dir(dirname).await?;
     let mut xs = Vec::with_capacity(1024);

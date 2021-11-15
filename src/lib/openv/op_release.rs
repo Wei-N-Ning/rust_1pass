@@ -47,7 +47,7 @@ fn parse_download_urls(urls: Vec<&str>) -> anyhow::Result<Release> {
     Err(anyhow::Error::new(MissingPlatform(cp)))
 }
 
-fn parse_release_notes(body: &str) -> anyhow::Result<Release> {
+pub fn parse_release_notes(body: &str) -> anyhow::Result<Release> {
     let latest_release_info = extract_latest_release(body)?;
     let download_urls = extract_download_urls(latest_release_info)?;
     parse_download_urls(download_urls)
@@ -55,7 +55,7 @@ fn parse_release_notes(body: &str) -> anyhow::Result<Release> {
 
 const URL: &str = "https://app-updates.agilebits.com/product_history/CLI";
 
-async fn download_release_notes() -> anyhow::Result<String> {
+pub async fn download_release_notes() -> anyhow::Result<String> {
     let resp = reqwest::get(URL).await?;
     resp.text().await.map_err(|err| anyhow::Error::new(err))
 }

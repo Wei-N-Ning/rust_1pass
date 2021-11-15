@@ -12,3 +12,4 @@ mod types;
 
 #[allow(dead_code)]
 mod unpacker;
+mod installer;

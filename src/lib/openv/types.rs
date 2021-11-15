@@ -1,9 +1,9 @@
-use anyhow::anyhow;
-use regex::Regex;
 use std::env;
 use std::fmt::Debug;
 use std::str::FromStr;
 
+use anyhow::anyhow;
+use regex::Regex;
 use semver::Version;
 use thiserror::Error;
 
@@ -76,7 +76,7 @@ impl FromStr for LocalVersion {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum OperatingSystem {
     Apple,
     Linux,
@@ -151,7 +151,7 @@ impl FromStr for Arch {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Platform {
     pub os: OperatingSystem,
     pub arch: Arch,
@@ -189,6 +189,11 @@ impl FromStr for Platform {
         };
         Ok(Self { os, arch })
     }
+}
+
+pub struct Installation {
+    pub local_version: LocalVersion,
+    pub release: Option<Release>,
 }
 
 #[cfg(test)]
@@ -238,7 +243,7 @@ mod test {
         assert_eq!(
             Platform {
                 os: OperatingSystem::FreeBSD,
-                arch: Arch::X86_32
+                arch: Arch::X86_32,
             },
             rl.platform
         );
@@ -267,7 +272,7 @@ mod test {
         assert_eq!(
             Platform {
                 os: OperatingSystem::FreeBSD,
-                arch: Arch::X86_32
+                arch: Arch::X86_32,
             },
             platform
         );
@@ -288,7 +293,7 @@ mod test {
         assert_eq!(
             Platform {
                 os: OperatingSystem::FreeBSD,
-                arch: Arch::X86_32
+                arch: Arch::X86_32,
             },
             platform
         );
