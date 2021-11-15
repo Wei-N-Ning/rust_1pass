@@ -28,6 +28,8 @@ pub fn sign_in_shorthand(conf: &SessionConfig) -> anyhow::Result<Session> {
     stdout.read_to_string(&mut out_str)?;
     drop(stdout);
     Ok(Session {
+        bin_filename: conf.bin_filename.clone(),
+        shorthand: conf.shorthand.clone(),
         session_code: out_str.trim().to_string(),
     })
 }
