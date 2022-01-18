@@ -63,6 +63,7 @@ pub fn unpack_apple_gzip(
     gz_filename: &Path,
     o_dir: &Path,
     o_name: &str,
+    rename: Option<&str>,
 ) -> anyhow::Result<(u64, String)> {
     let input = io::BufReader::new(fs::File::open(gz_filename)?);
     let mut decoder =
@@ -82,7 +83,13 @@ pub fn unpack_apple_gzip(
     proc.wait()?;
     let o_filename = o_dir.join(o_name);
     if std::fs::metadata(&o_filename)?.is_file() {
-        Ok((0, o_filename.to_string_lossy().into_owned()))
+        if let Some(x) = rename {
+            let dest_filename = o_dir.join(x);
+            fs::rename(&o_filename, &dest_filename)?;
+            Ok((0, dest_filename.to_string_lossy().into_owned()))
+        } else {
+            Ok((0, o_filename.to_string_lossy().into_owned()))
+        }
     } else {
         Err(anyhow!(
             "failed to extract '{}' from cpio archive '{:?}'",
@@ -142,8 +149,13 @@ mod test {
         ]
         .iter()
         .collect();
-        let (_, o_filename) =
-            unpack_apple_gzip(gzip_filename.as_ref(), "/tmp".as_ref(), "op").unwrap();
+        let (_, o_filename) = unpack_apple_gzip(
+            gzip_filename.as_ref(),
+            "/tmp".as_ref(),
+            "op",
+            Some("op_there_is_a_cow_1.1.2"),
+        )
+        .unwrap();
 
         assert!(std::fs::metadata(o_filename).unwrap().is_file());
     }

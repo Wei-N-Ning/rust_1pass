@@ -23,8 +23,20 @@ pub async fn get_or_install(dirname: &Path) -> anyhow::Result<Installation> {
     let archive_filename = Path::new(&o_filename);
 
     let (_, binary_filename) = if cfg!(target_os = "apple") {
-        let gzip_filename = unpack_apple_pkg(archive_filename, &dirname)?;
-        unpack_apple_gzip(gzip_filename.as_ref(), &dirname, "op")?
+        let gzip_filename = unpack_apple_pkg(archive_filename, "/tmp/out".as_ref())?;
+        let basen = archive_filename
+            .iter()
+            .last()
+            .ok_or(anyhow::anyhow!(
+                "irregular path (no basename): {:?}",
+                archive_filename
+            ))?
+            .to_str()
+            .ok_or(anyhow::anyhow!(
+                "irregular path (cannot convert to str): {:?}",
+                archive_filename
+            ))?;
+        unpack_apple_gzip(gzip_filename.as_ref(), &dirname, "op", Some(basen))?
     } else {
         let unpack_opt = UnpackOption::UseArchiveName("op".to_string());
         unpack_one_to(&archive_filename, unpack_opt, &dirname)?
