@@ -43,28 +43,18 @@ mod test {
     use std::path::PathBuf;
     use tokio::runtime::Runtime;
 
-    fn rm(path: &Path) -> anyhow::Result<()> {
-        fs::remove_file(path)?;
-        Ok(())
-    }
-
-    fn rm_a(dirname: &Path) -> anyhow::Result<()> {
-        for res in fs::read_dir(dirname)? {
-            let ent = res?;
-            if !ent.path().ends_with("README.md") {
-                rm(&ent.path())?;
-            }
-        }
-        Ok(())
-    }
-
     #[test]
     fn test_ensure_installed_for_the_first_time() {
         // empty the directory
-        let dirname: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testdata", "tmp"]
-            .iter()
-            .collect();
-        assert!(rm_a(&dirname).is_ok());
+        let dirname: PathBuf = [
+            env!("CARGO_MANIFEST_DIR"),
+            "testdata",
+            "tmp",
+            "installed_for_the_first_time",
+        ]
+        .iter()
+        .collect();
+        assert!(fs::create_dir_all(&dirname).is_ok());
 
         let fut = get_or_install(&dirname);
         let rt = Runtime::new().unwrap();
@@ -73,15 +63,22 @@ mod test {
         let inst = rs.unwrap();
         // has a release value
         assert!(inst.release.is_some());
+        assert!(fs::remove_dir_all(&dirname).is_ok());
     }
 
     #[test]
     fn test_ensure_get_preinstalled_binary() {
         // empty the directory
-        let dirname: PathBuf = [env!("CARGO_MANIFEST_DIR"), "testdata", "tmp"]
-            .iter()
-            .collect();
-        assert!(rm_a(&dirname).is_ok());
+        let dirname: PathBuf = [
+            env!("CARGO_MANIFEST_DIR"),
+            "testdata",
+            "tmp",
+            "get_preinstalled_binary",
+        ]
+        .iter()
+        .collect();
+        assert!(fs::create_dir_all(&dirname).is_ok());
+
         let filename = dirname.clone().join("op_linux_amd64_v1.13.15");
         assert!(fs::File::create(&filename).is_ok());
 
@@ -94,5 +91,7 @@ mod test {
         assert!(inst.release.is_none());
 
         assert_eq!(Version::new(1, 13, 15), inst.local_version.version);
+
+        assert!(fs::remove_dir_all(&dirname).is_ok());
     }
 }
