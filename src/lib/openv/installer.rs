@@ -24,7 +24,7 @@ pub async fn get_or_install(dirname: &Path) -> anyhow::Result<Installation> {
 
     let (_, binary_filename) = if cfg!(target_os = "macos") {
         let p = "/tmp/pkgutil_workdir";
-        let _dont_care = fs::remove_dir_all(p);
+        let _dont_care = fs::remove_dir_all(p).await;
         let gzip_filename = unpack_apple_pkg(archive_filename, p.as_ref())?;
         let basen = archive_filename
             .iter()
@@ -83,7 +83,6 @@ mod test {
         let fut = get_or_install(&dirname);
         let rt = Runtime::new().unwrap();
         let rs = rt.block_on(fut);
-        println!("{:?}", rs);
         assert!(rs.is_ok());
         let inst = rs.unwrap();
         // has a release value
