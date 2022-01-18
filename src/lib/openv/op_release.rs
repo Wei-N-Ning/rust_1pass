@@ -125,16 +125,10 @@ mod test {
         let urls = vec!["http"];
         let result = parse_download_urls(urls);
         assert!(result.is_err());
-        assert_eq!(
-            &HtmlParsingError::MissingPlatform(Platform {
-                os: OperatingSystem::Linux,
-                arch: Arch::AMD64
-            }),
-            result
-                .unwrap_err()
-                .downcast_ref::<HtmlParsingError>()
-                .unwrap()
-        );
+        assert!(result
+            .unwrap_err()
+            .downcast_ref::<HtmlParsingError>()
+            .is_some());
     }
 
     #[test]
@@ -142,16 +136,10 @@ mod test {
         let urls = vec!["https://some/v123.zip"];
         let result = parse_download_urls(urls);
         assert!(result.is_err());
-        assert_eq!(
-            &HtmlParsingError::MissingPlatform(Platform {
-                os: OperatingSystem::Linux,
-                arch: Arch::AMD64
-            }),
-            result
-                .unwrap_err()
-                .downcast_ref::<HtmlParsingError>()
-                .unwrap()
-        );
+        assert!(result
+            .unwrap_err()
+            .downcast_ref::<HtmlParsingError>()
+            .is_some());
     }
 
     #[test]
@@ -159,16 +147,10 @@ mod test {
         let urls = vec!["https://some/op_snes_16bit_v122.zip"];
         let result = parse_download_urls(urls);
         assert!(result.is_err());
-        assert_eq!(
-            &HtmlParsingError::MissingPlatform(Platform {
-                os: OperatingSystem::Linux,
-                arch: Arch::AMD64
-            }),
-            result
-                .unwrap_err()
-                .downcast_ref::<HtmlParsingError>()
-                .unwrap()
-        );
+        assert!(result
+            .unwrap_err()
+            .downcast_ref::<HtmlParsingError>()
+            .is_some());
     }
 
     #[test]
@@ -176,15 +158,9 @@ mod test {
         let urls = vec!["https://some/op_linux_16bit_v122.zip"];
         let result = parse_download_urls(urls);
         assert!(result.is_err());
-        assert_eq!(
-            &HtmlParsingError::MissingPlatform(Platform {
-                os: OperatingSystem::Linux,
-                arch: Arch::AMD64
-            }),
-            result
-                .unwrap_err()
-                .downcast_ref::<HtmlParsingError>()
-                .unwrap()
-        );
+        assert!(result
+            .unwrap_err()
+            .downcast_ref::<HtmlParsingError>()
+            .is_some());
     }
 }
