@@ -164,8 +164,14 @@ pub struct Platform {
 impl Platform {
     pub(crate) fn current() -> Self {
         match OperatingSystem::current() {
-            x@OperatingSystem::Apple => Self { os: x, arch: Arch::AppleUniversal },
-            other@_ =>  Self {os: other, arch: Arch::current()},
+            x @ OperatingSystem::Apple => Self {
+                os: x,
+                arch: Arch::AppleUniversal,
+            },
+            other @ _ => Self {
+                os: other,
+                arch: Arch::current(),
+            },
         }
     }
 }
@@ -195,6 +201,7 @@ impl FromStr for Platform {
     }
 }
 
+#[derive(Debug)]
 pub struct Installation {
     pub local_version: LocalVersion,
     pub release: Option<Release>,

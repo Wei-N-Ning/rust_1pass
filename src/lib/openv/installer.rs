@@ -22,8 +22,10 @@ pub async fn get_or_install(dirname: &Path) -> anyhow::Result<Installation> {
     let o_filename = download_url(dirname, &release.url).await?;
     let archive_filename = Path::new(&o_filename);
 
-    let (_, binary_filename) = if cfg!(target_os = "apple") {
-        let gzip_filename = unpack_apple_pkg(archive_filename, "/tmp/out".as_ref())?;
+    let (_, binary_filename) = if cfg!(target_os = "macos") {
+        let p = "/tmp/pkgutil_workdir";
+        let _dont_care = fs::remove_dir_all(p);
+        let gzip_filename = unpack_apple_pkg(archive_filename, p.as_ref())?;
         let basen = archive_filename
             .iter()
             .last()
@@ -36,12 +38,16 @@ pub async fn get_or_install(dirname: &Path) -> anyhow::Result<Installation> {
                 "irregular path (cannot convert to str): {:?}",
                 archive_filename
             ))?;
-        unpack_apple_gzip(gzip_filename.as_ref(), &dirname, "op", Some(basen))?
+        let (basen_clean, _) = basen
+            .rsplit_once(".")
+            .ok_or(anyhow::anyhow!("no file extension: {:?}", archive_filename))?;
+        let o = unpack_apple_gzip(gzip_filename.as_ref(), &dirname, "op", Some(basen_clean))?;
+        fs::remove_file(gzip_filename).await?;
+        o
     } else {
         let unpack_opt = UnpackOption::UseArchiveName("op".to_string());
         unpack_one_to(&archive_filename, unpack_opt, &dirname)?
     };
-
     fs::remove_file(&archive_filename).await?;
     Ok(Installation {
         local_version: LocalVersion {
@@ -71,11 +77,13 @@ mod test {
         ]
         .iter()
         .collect();
+        let _dont_care = fs::remove_dir_all(&dirname);
         assert!(fs::create_dir_all(&dirname).is_ok());
 
         let fut = get_or_install(&dirname);
         let rt = Runtime::new().unwrap();
         let rs = rt.block_on(fut);
+        println!("{:?}", rs);
         assert!(rs.is_ok());
         let inst = rs.unwrap();
         // has a release value
@@ -84,6 +92,7 @@ mod test {
     }
 
     #[test]
+    #[cfg(target_os = "linux")]
     fn test_ensure_get_preinstalled_binary() {
         // empty the directory
         let dirname: PathBuf = [

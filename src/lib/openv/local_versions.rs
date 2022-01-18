@@ -34,12 +34,14 @@ pub async fn find_local_version(dirname: &Path) -> anyhow::Result<LocalVersion> 
 
 #[cfg(test)]
 mod test {
+    #[allow(unused_imports)]
     use semver::Version;
     use tokio::runtime::Runtime;
 
     use super::*;
 
     #[test]
+    #[cfg(target_os = "linux")]
     fn test_find_local_version() {
         let p = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("testdata")

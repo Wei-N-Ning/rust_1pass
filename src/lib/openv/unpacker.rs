@@ -47,8 +47,8 @@ pub fn unpack_apple_pkg(pkg_filename: &Path, o_dir: &Path) -> anyhow::Result<Str
         .arg(&o_dir)
         .spawn()?;
     proc.wait()?;
-
     let payload = o_dir.join("op.pkg").join("Payload");
+
     if fs::metadata(&payload)?.is_file() {
         Ok(payload.to_string_lossy().into_owned())
     } else {
@@ -69,7 +69,7 @@ pub fn unpack_apple_gzip(
     let mut decoder =
         libflate::gzip::Decoder::new(input).expect("failed to read gzip (.pkg Payload) file!");
     let cpio_filename = o_dir.clone().join("out.cpio");
-    let mut output = io::BufWriter::new(fs::File::create(cpio_filename)?);
+    let mut output = io::BufWriter::new(fs::File::create(&cpio_filename)?);
     io::copy(&mut decoder, &mut output)?;
     let mut proc = std::process::Command::new("cpio")
         .current_dir(&o_dir)
@@ -78,16 +78,19 @@ pub fn unpack_apple_gzip(
         .stderr(std::process::Stdio::piped())
         .arg("-i")
         .arg("-F")
-        .arg("/tmp/out.cpio")
+        .arg(&cpio_filename)
         .spawn()?;
     proc.wait()?;
     let o_filename = o_dir.join(o_name);
     if std::fs::metadata(&o_filename)?.is_file() {
         if let Some(x) = rename {
             let dest_filename = o_dir.join(x);
-            fs::rename(&o_filename, &dest_filename)?;
+            fs::copy(&o_filename, &dest_filename)?;
+            fs::remove_file(&o_filename)?; // move
+            fs::remove_file(&cpio_filename)?; // cpio temp
             Ok((0, dest_filename.to_string_lossy().into_owned()))
         } else {
+            fs::remove_file(&cpio_filename)?;
             Ok((0, o_filename.to_string_lossy().into_owned()))
         }
     } else {
