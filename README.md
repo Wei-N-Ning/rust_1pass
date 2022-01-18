@@ -17,7 +17,9 @@ CLI's 2-factor authentication (provided that 2-factor is turned on in the Accoun
 
 ## Goals
 
-- work cross-platforms
+- work cross-platforms, currently tested on:
+  - linux (intel i7 & Amd Ryzen 7)
+  - apple m1 max
 - automatically get the latest release from 1Password release page
 - optionally curate the local installed versions similar to `pyenv` and `goenv`
 - provide a simple API for the common 1Password operations (sign-in, get-item, etc.)
