@@ -97,7 +97,7 @@ impl FromStr for OperatingSystem {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use OperatingSystem::*;
         match s {
-            "apple" => Ok(Apple),
+            "apple" | "macos" => Ok(Apple),
             "linux" => Ok(Linux),
             "openbsd" => Ok(OpenBSD),
             "freebsd" => Ok(FreeBSD),
@@ -131,6 +131,10 @@ impl Arch {
         {
             return Arch::Arm;
         }
+        #[cfg(target_arch = "aarch64")]
+        {
+            return Arch::Arm64;
+        }
         unimplemented!("")
     }
 }
@@ -159,9 +163,9 @@ pub struct Platform {
 
 impl Platform {
     pub(crate) fn current() -> Self {
-        Self {
-            os: OperatingSystem::current(),
-            arch: Arch::current(),
+        match OperatingSystem::current() {
+            x@OperatingSystem::Apple => Self { os: x, arch: Arch::AppleUniversal },
+            other@_ =>  Self {os: other, arch: Arch::current()},
         }
     }
 }
