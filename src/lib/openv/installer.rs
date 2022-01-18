@@ -4,7 +4,7 @@ use crate::openv::downloader::download_url;
 use crate::openv::local_versions::find_local_version;
 use crate::openv::op_release::{download_release_notes, parse_release_notes};
 use crate::openv::types::*;
-use crate::openv::unpacker::{unpack_one_to, UnpackOption};
+use crate::openv::unpacker::{unpack_apple_gzip, unpack_apple_pkg, unpack_one_to, UnpackOption};
 use tokio::fs;
 
 #[allow(dead_code)]
@@ -20,11 +20,17 @@ pub async fn get_or_install(dirname: &Path) -> anyhow::Result<Installation> {
     let rl_notes = download_release_notes().await?;
     let release = parse_release_notes(&rl_notes)?;
     let o_filename = download_url(dirname, &release.url).await?;
-    let zip_filename = Path::new(&o_filename);
-    let unpack_opt = UnpackOption::UseArchiveName("op".to_string());
-    let (size, binary_filename) = unpack_one_to(&zip_filename, unpack_opt, &dirname)?;
-    println!("unpacked binary size: {}", size);
-    fs::remove_file(&zip_filename).await?;
+    let archive_filename = Path::new(&o_filename);
+
+    let (_, binary_filename) = if cfg!(target_os = "apple") {
+        let gzip_filename = unpack_apple_pkg(archive_filename, &dirname)?;
+        unpack_apple_gzip(gzip_filename.as_ref(), &dirname, "op")?
+    } else {
+        let unpack_opt = UnpackOption::UseArchiveName("op".to_string());
+        unpack_one_to(&archive_filename, unpack_opt, &dirname)?
+    };
+
+    fs::remove_file(&archive_filename).await?;
     Ok(Installation {
         local_version: LocalVersion {
             version: release.version.clone(),
