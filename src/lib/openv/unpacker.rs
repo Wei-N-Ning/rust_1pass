@@ -76,4 +76,19 @@ mod test {
         assert!(res.is_ok());
         assert!(res.unwrap().1.ends_with("op_linux_amd64_v1.11.2"));
     }
+
+    #[test]
+    fn test_unpack_apple_pkg() {
+        let pkg_filename: std::path::PathBuf = [
+            env!("CARGO_MANIFEST_DIR"),
+            "testdata",
+            "archives",
+            "op_apple_universal_v1.12.4.pkg",
+        ]
+        .iter()
+        .collect();
+        let mut input = io::BufReader::new(Box::new(fs::File::open(pkg_filename).unwrap()));
+        let mut decoder =
+            libflate::gzip::Decoder::new(input).expect("failed to read .pkg (gzip) file!");
+    }
 }
