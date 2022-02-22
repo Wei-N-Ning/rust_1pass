@@ -5,9 +5,21 @@ use std::process::{Command, Stdio};
 
 use crate::session::types::*;
 
-// pub fn list_accounts_and_shorthand(conf: &SessionConfig) -> anyhow::Result<Vec<Account>> {
-//     Ok(Vec::new())
-// }
+pub fn local_accounts(conf: &SessionConfig) -> anyhow::Result<Vec<Account>> {
+    let mut proc = Command::new(&conf.bin_filename)
+        .stdout(Stdio::piped())
+        .arg("signin")
+        .arg("-l")
+        .spawn()?;
+    let mut stdout = proc
+        .stdout
+        .take()
+        .ok_or(anyhow!("local accounts: fail to take stdout"))?;
+    let mut out_str = String::with_capacity(1024);
+    stdout.read_to_string(&mut out_str)?;
+    drop(stdout);
+    Ok(Account::from_descriptions(&out_str))
+}
 
 pub fn sign_in_shorthand(conf: &SessionConfig) -> anyhow::Result<Session> {
     let mut proc = Command::new(&conf.bin_filename)
@@ -17,8 +29,14 @@ pub fn sign_in_shorthand(conf: &SessionConfig) -> anyhow::Result<Session> {
         .arg("-r")
         .arg(&conf.shorthand)
         .spawn()?;
-    let mut stdin = proc.stdin.take().ok_or(anyhow!(""))?;
-    let mut stdout = proc.stdout.take().ok_or(anyhow!(""))?;
+    let mut stdin = proc
+        .stdin
+        .take()
+        .ok_or(anyhow!("signin: fail to take stdin"))?;
+    let mut stdout = proc
+        .stdout
+        .take()
+        .ok_or(anyhow!("signin: fail to take stdout"))?;
     let mut out_str = "".to_string();
     write!(
         stdin,
