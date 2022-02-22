@@ -5,6 +5,10 @@ use std::process::{Command, Stdio};
 
 use crate::session::types::*;
 
+// pub fn list_accounts_and_shorthand(conf: &SessionConfig) -> anyhow::Result<Vec<Account>> {
+//     Ok(Vec::new())
+// }
+
 pub fn sign_in_shorthand(conf: &SessionConfig) -> anyhow::Result<Session> {
     let mut proc = Command::new(&conf.bin_filename)
         .stdin(Stdio::piped())
