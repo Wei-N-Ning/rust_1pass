@@ -5,7 +5,7 @@ use tokio::fs;
 pub async fn get_or_create() -> anyhow::Result<String> {
     const ONE_PASSWORD_HOME_DIR: &str = ".op_cli";
     let hd = home_dir()
-        .ok_or(anyhow::anyhow!("failed to retrieve the home directory."))?
+        .ok_or_else(|| anyhow::anyhow!("failed to retrieve the home directory."))?
         .join(ONE_PASSWORD_HOME_DIR);
     let opt_metadata = fs::metadata(&hd).await;
     if opt_metadata.is_err() || !opt_metadata.unwrap().file_type().is_dir() {

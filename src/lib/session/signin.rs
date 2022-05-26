@@ -14,7 +14,7 @@ pub fn local_accounts(conf: &SessionConfig) -> anyhow::Result<Vec<Account>> {
     let mut stdout = proc
         .stdout
         .take()
-        .ok_or(anyhow!("local accounts: fail to take stdout"))?;
+        .ok_or_else(|| anyhow!("local accounts: fail to take stdout"))?;
     let mut out_str = String::with_capacity(1024);
     stdout.read_to_string(&mut out_str)?;
     drop(stdout);
@@ -32,11 +32,11 @@ pub fn sign_in_shorthand(conf: &SessionConfig) -> anyhow::Result<Session> {
     let mut stdin = proc
         .stdin
         .take()
-        .ok_or(anyhow!("signin: fail to take stdin"))?;
+        .ok_or_else(|| anyhow!("signin: fail to take stdin"))?;
     let mut stdout = proc
         .stdout
         .take()
-        .ok_or(anyhow!("signin: fail to take stdout"))?;
+        .ok_or_else(|| anyhow!("signin: fail to take stdout"))?;
     let mut out_str = "".to_string();
     write!(
         stdin,

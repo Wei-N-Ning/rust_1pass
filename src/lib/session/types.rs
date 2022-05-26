@@ -32,7 +32,7 @@ impl Session {
             .output()?;
         let s = String::from_utf8(out.stdout)?;
         Ok(s.trim()
-            .split(",")
+            .split(',')
             .map(|s| s.to_string())
             .collect::<Vec<_>>())
     }

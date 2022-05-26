@@ -10,7 +10,7 @@ pub async fn download_url(o_dir: &Path, u: &str) -> anyhow::Result<String> {
     if res.status() != StatusCode::OK {
         return Err(anyhow!("request has been rejected: {}", u));
     }
-    let basename = match u.rsplit_once("/") {
+    let basename = match u.rsplit_once('/') {
         Some((_, x)) => x,
         None => "unnamed",
     };

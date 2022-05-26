@@ -41,7 +41,7 @@ impl FromStr for Release {
         let re = Regex::new("^op_([0-9a-zA-Z]+_[0-9a-zA-Z]+)_v([0-9.]+[0-9])").unwrap();
         let captures = re
             .captures(base)
-            .ok_or(anyhow!("invalid format: {}", base))?;
+            .ok_or_else(|| anyhow!("invalid format: {}", base))?;
         let platform = Platform::from_str(captures.get(1).unwrap().as_str())?;
         let version = Version::from_str(captures.get(2).unwrap().as_str())?;
         Ok(Release {
@@ -168,7 +168,7 @@ impl Platform {
                 os: x,
                 arch: Arch::AppleUniversal,
             },
-            other @ _ => Self {
+            other => Self {
                 os: other,
                 arch: Arch::current(),
             },
@@ -182,7 +182,7 @@ impl FromStr for Platform {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (os_str, arch_str) = s
             .split_once("_")
-            .ok_or(anyhow!("missing delimiter: {}", s))?;
+            .ok_or_else(|| anyhow!("missing delimiter: {}", s))?;
         let os = OperatingSystem::from_str(os_str)?;
         let arch = match os {
             OperatingSystem::Apple => {
@@ -214,7 +214,7 @@ mod test {
     #[test]
     fn test_ensure_current_operating_system_recognizable() {
         let os = OperatingSystem::current();
-        assert!(format!("{:?}", os).len() > 0);
+        assert!(!format!("{:?}", os).is_empty());
     }
 
     #[test]

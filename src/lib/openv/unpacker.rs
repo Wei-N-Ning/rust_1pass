@@ -23,7 +23,7 @@ pub fn unpack_one_to(
         UnpackOption::UseArchiveName(name) => {
             let basename = zfilename
                 .file_stem()
-                .ok_or(anyhow!("irregular filename: {:?}", zfilename))?
+                .ok_or_else(|| anyhow!("irregular filename: {:?}", zfilename))?
                 .to_string_lossy()
                 .into_owned();
             (o_dir.join(basename), archive.by_name(&name)?)
@@ -68,7 +68,7 @@ pub fn unpack_apple_gzip(
     let input = io::BufReader::new(fs::File::open(gz_filename)?);
     let mut decoder =
         libflate::gzip::Decoder::new(input).expect("failed to read gzip (.pkg Payload) file!");
-    let cpio_filename = o_dir.clone().join("out.cpio");
+    let cpio_filename = o_dir.to_path_buf().join("out.cpio");
     let mut output = io::BufWriter::new(fs::File::create(&cpio_filename)?);
     io::copy(&mut decoder, &mut output)?;
     let mut proc = std::process::Command::new("cpio")
@@ -82,7 +82,7 @@ pub fn unpack_apple_gzip(
         .spawn()?;
     proc.wait()?;
     let o_filename = o_dir.join(o_name);
-    if std::fs::metadata(&o_filename)?.is_file() {
+    if fs::metadata(&o_filename)?.is_file() {
         if let Some(x) = rename {
             let dest_filename = o_dir.join(x);
             fs::copy(&o_filename, &dest_filename)?;
@@ -105,6 +105,7 @@ pub fn unpack_apple_gzip(
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::path::PathBuf;
 
     #[test]
     fn test_unpack_single_file_to_dest_use_entry_name() {
@@ -144,7 +145,7 @@ mod test {
 
     #[test]
     fn test_unpack_apple_gzip_file() {
-        let gzip_filename: std::path::PathBuf = [
+        let gzip_filename: PathBuf = [
             env!("CARGO_MANIFEST_DIR"),
             "testdata",
             "archives",
@@ -160,6 +161,6 @@ mod test {
         )
         .unwrap();
 
-        assert!(std::fs::metadata(o_filename).unwrap().is_file());
+        assert!(fs::metadata(o_filename).unwrap().is_file());
     }
 }
