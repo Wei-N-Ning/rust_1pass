@@ -7,6 +7,7 @@
 //   ...
 // }
 
+use crate::openv::settings::ReleaseNoteUrl;
 use crate::openv::types::*;
 use regex::Regex;
 use std::str::FromStr;
@@ -53,11 +54,9 @@ pub fn parse_release_notes(body: &str) -> anyhow::Result<Release> {
     parse_download_urls(download_urls)
 }
 
-const URL: &str = "https://app-updates.agilebits.com/product_history/CLI";
-
-pub async fn download_release_notes() -> anyhow::Result<String> {
-    let resp = reqwest::get(URL).await?;
-    resp.text().await.map_err(|err| anyhow::Error::new(err))
+pub async fn download_release_notes(release_note_url: ReleaseNoteUrl) -> anyhow::Result<String> {
+    let resp = reqwest::get(release_note_url.to_string()).await?;
+    resp.text().await.map_err(anyhow::Error::new)
 }
 
 #[cfg(test)]

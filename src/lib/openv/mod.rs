@@ -12,9 +12,11 @@ mod types;
 
 mod home_dir;
 mod installer;
+mod settings;
 #[allow(dead_code)]
 mod unpacker;
 
 pub use home_dir::get_or_create;
 pub use installer::get_or_install;
+pub use settings::ReleaseNoteUrl;
 pub use types::Installation;
