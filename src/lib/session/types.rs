@@ -1,3 +1,4 @@
+use crate::ReleaseNoteUrl;
 use std::process::Command;
 use std::str::FromStr;
 
@@ -10,7 +11,14 @@ pub struct SessionConfig {
 pub struct Session {
     pub bin_filename: String,
     pub shorthand: String,
-    pub session_code: String,
+    pub session_code: SessionCode,
+    pub major_version: ReleaseNoteUrl,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SessionCode {
+    V1PlainString(String),
+    V2KeyValuePair { key: String, value: String },
 }
 
 #[derive(Debug)]
@@ -22,19 +30,37 @@ pub struct Account {
 
 impl Session {
     pub fn item_fields(&self, item: &str, fields: &[&str]) -> anyhow::Result<Vec<String>> {
-        let out = Command::new(&self.bin_filename)
-            .env(format!("OP_SESSION_{}", self.shorthand), &self.session_code)
-            .arg("get")
-            .arg("item")
-            .arg(item)
-            .arg(format!("--fields={}", fields.join(",")))
-            .arg("--format=CSV")
-            .output()?;
-        let s = String::from_utf8(out.stdout)?;
-        Ok(s.trim()
-            .split(',')
-            .map(|s| s.to_string())
-            .collect::<Vec<_>>())
+        match &self.session_code {
+            SessionCode::V1PlainString(session_code) => {
+                let out = Command::new(&self.bin_filename)
+                    .env(format!("OP_SESSION_{}", self.shorthand), session_code)
+                    .arg("get")
+                    .arg("item")
+                    .arg(item)
+                    .arg(format!("--fields={}", fields.join(",")))
+                    .arg("--format=CSV")
+                    .output()?;
+                let s = String::from_utf8(out.stdout)?;
+                Ok(s.trim()
+                    .split(',')
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>())
+            }
+            SessionCode::V2KeyValuePair { key, value } => {
+                let out = Command::new(&self.bin_filename)
+                    .env(key, value)
+                    .arg("item")
+                    .arg("get")
+                    .arg(item)
+                    .arg(format!("--fields={}", fields.join(",")))
+                    .output()?;
+                let s = String::from_utf8(out.stdout)?;
+                Ok(s.trim()
+                    .split(',')
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>())
+            }
+        }
     }
 }
 
@@ -55,12 +81,22 @@ impl FromStr for Account {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let xs = s.split_whitespace().collect::<Vec<_>>();
-        if let [_, shorthand, email, op_url] = xs[..] {
-            if email.contains('@') && op_url.starts_with("https://") {
+        if let [first, second, third, fourth] = xs[..] {
+            if third.contains('@') && fourth.starts_with("https://") {
+                // v1
                 return Ok(Account {
-                    shorthand: shorthand.to_owned(),
-                    email: email.to_owned(),
-                    op_url: op_url.to_owned(),
+                    shorthand: second.to_owned(),
+                    email: third.to_owned(),
+                    op_url: fourth.to_owned(),
+                });
+            }
+            // v2
+            if !first.is_empty() && !second.is_empty() && third.contains('@') && !fourth.is_empty()
+            {
+                return Ok(Account {
+                    shorthand: first.to_owned(),
+                    email: third.to_owned(),
+                    op_url: second.to_owned(),
                 });
             }
         }

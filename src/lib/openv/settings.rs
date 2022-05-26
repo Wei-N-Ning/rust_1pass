@@ -1,4 +1,5 @@
 #[allow(dead_code)]
+#[derive(Debug, PartialEq)]
 pub enum ReleaseNoteUrl {
     V1,
     V2,

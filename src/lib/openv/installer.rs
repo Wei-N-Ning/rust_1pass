@@ -13,13 +13,14 @@ pub async fn get_or_install(
     dirname: &Path,
     release_note_url: ReleaseNoteUrl,
 ) -> anyhow::Result<Installation> {
-    let rl_notes = download_release_notes(release_note_url).await?;
+    let rl_notes = download_release_notes(&release_note_url).await?;
     let release = parse_release_notes(&rl_notes)?;
 
     // compare the local version to the release version
     if let Ok(lv) = find_local_version(dirname).await {
         if lv.version >= release.version {
             return Ok(Installation {
+                major_version: release_note_url,
                 local_version: lv,
                 release: None,
             });
@@ -56,6 +57,7 @@ pub async fn get_or_install(
     };
     fs::remove_file(&archive_filename).await?;
     Ok(Installation {
+        major_version: release_note_url,
         local_version: LocalVersion {
             version: release.version.clone(),
             platform: release.platform,

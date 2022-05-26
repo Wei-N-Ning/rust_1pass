@@ -2,6 +2,7 @@ use std::env;
 use std::fmt::Debug;
 use std::str::FromStr;
 
+use crate::ReleaseNoteUrl;
 use anyhow::anyhow;
 use regex::Regex;
 use semver::Version;
@@ -203,6 +204,7 @@ impl FromStr for Platform {
 
 #[derive(Debug)]
 pub struct Installation {
+    pub major_version: ReleaseNoteUrl,
     pub local_version: LocalVersion,
     pub release: Option<Release>,
 }
