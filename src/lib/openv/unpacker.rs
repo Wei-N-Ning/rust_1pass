@@ -12,14 +12,14 @@ pub enum UnpackOption {
 }
 
 #[cfg(target_family = "unix")]
-fn handle_permission(p: &PathBuf, perms: Permissions) -> std::io::Result<()> {
+fn handle_permission(p: &PathBuf, mut perms: Permissions) -> std::io::Result<()> {
     use std::os::unix::fs::PermissionsExt;
     perms.set_mode(0o700);
-    fs::set_permissions(&o_filename, perms)
+    fs::set_permissions(&p, perms)
 }
 
 #[cfg(target_family = "windows")]
-fn handle_permission(_p: &PathBuf, _perms: Permissions) -> std::io::Result<()> {
+fn handle_permission(_p: &PathBuf, mut _perms: Permissions) -> std::io::Result<()> {
     Ok(())
 }
 

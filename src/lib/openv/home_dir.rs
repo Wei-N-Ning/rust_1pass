@@ -5,7 +5,7 @@ use dirs::home_dir;
 use tokio::fs;
 
 #[cfg(target_family = "unix")]
-async fn handle_permission(p: &PathBuf, perms: Permissions) -> std::io::Result<()> {
+async fn handle_permission(p: &PathBuf, mut perms: Permissions) -> std::io::Result<()> {
     use std::os::unix::fs::PermissionsExt;
     if !(perms.mode() == 0o100700 || perms.mode() == 0o700) {
         perms.set_mode(0o700);
@@ -15,7 +15,7 @@ async fn handle_permission(p: &PathBuf, perms: Permissions) -> std::io::Result<(
 }
 
 #[cfg(target_family = "windows")]
-async fn handle_permission(_p: &PathBuf, _perms: Permissions) -> std::io::Result<()> {
+async fn handle_permission(_p: &PathBuf, mut _perms: Permissions) -> std::io::Result<()> {
     Ok(())
 }
 
