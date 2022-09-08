@@ -1,5 +1,5 @@
-use std::os::unix::fs::PermissionsExt;
-use std::path::Path;
+use std::fs::Permissions;
+use std::path::{Path, PathBuf};
 use std::{fs, io};
 
 use anyhow::anyhow;
@@ -9,6 +9,18 @@ pub enum UnpackOption {
     UseEntryName(String),
     /// name the unpacked file after the zip archive (without the extension)
     UseArchiveName(String),
+}
+
+#[cfg(target_family = "unix")]
+fn handle_permission(p: &PathBuf, perms: Permissions) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    perms.set_mode(0o700);
+    fs::set_permissions(&o_filename, perms)
+}
+
+#[cfg(target_family = "windows")]
+fn handle_permission(_p: &PathBuf, _perms: Permissions) -> std::io::Result<()> {
+    Ok(())
 }
 
 pub fn unpack_one_to(
@@ -31,9 +43,9 @@ pub fn unpack_one_to(
     };
     let mut o_file = fs::File::create(&o_filename)?;
     let copied = io::copy(&mut file, &mut o_file)?;
+    #[allow(unused_mut)]
     let mut perms = fs::metadata(&o_filename)?.permissions();
-    perms.set_mode(0o700);
-    fs::set_permissions(&o_filename, perms)?;
+    handle_permission(&o_filename, perms)?;
     return Ok((copied, o_filename.to_string_lossy().into_owned()));
 }
 
@@ -104,8 +116,9 @@ pub fn unpack_apple_gzip(
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use std::path::PathBuf;
+
+    use super::*;
 
     #[test]
     fn test_unpack_single_file_to_dest_use_entry_name() {
